@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DomainForge</title>
+<style>
+  :root { --bg:#0e1116; --card:#171b22; --line:#262c36; --fg:#e8ecf2; --mute:#8b95a5; --acc:#4cc2ff; --ok:#3ddc97; --warn:#ffb454; --bad:#ff6b6b; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f6f7f9; --card:#fff; --line:#e1e5ea; --fg:#14181f; --mute:#5b6676; --acc:#0a7cc2; --ok:#12a566; --warn:#c77700; --bad:#d63a3a; } }
+  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:32px 16px 64px }
+  h1 { font-size:28px; margin:0 0 4px } .sub { color:var(--mute); margin:0 0 24px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px }
+  textarea,input { width:100%; background:transparent; color:var(--fg); border:1px solid var(--line); border-radius:8px; padding:10px; font:inherit }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px }
+  button { background:var(--acc); color:#04121c; border:0; border-radius:8px; padding:10px 16px; font-weight:600; cursor:pointer }
+  button:disabled { opacity:.5 } label { color:var(--mute); font-size:13px }
+  .item { display:grid; grid-template-columns:1fr auto; gap:4px 12px; padding:12px 0; border-top:1px solid var(--line) }
+  .item:first-child { border-top:0 } .dom { font-weight:650; font-size:17px } .why { color:var(--mute); grid-column:1/-1; font-size:13px }
+  .score { font-weight:700; text-align:right } .bar { height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:4px; width:90px }
+  .bar i { display:block; height:100%; background:var(--acc) }
+  .tag { font-size:11px; padding:2px 7px; border-radius:99px; border:1px solid var(--line); margin-left:6px; vertical-align:2px }
+  .AVAILABLE { color:var(--ok) } .TAKEN { color:var(--bad) } .UNKNOWN { color:var(--warn) }
+  .HIGH { color:var(--bad) } .MEDIUM { color:var(--warn) } .LOW,.NONE,.OFFICIAL { color:var(--ok) }
+  .meta { color:var(--mute); font-size:12px; margin-top:8px } .small { font-size:13px; color:var(--mute) }
+  ul { margin:6px 0 0 18px; padding:0 }
+</style>
+</head>
+<body>
+<main>
+  <h1>DomainForge</h1>
+  <p class="sub">Describe your business. Get ranked, available domain names, screened for lookalike risk.</p>
+
+  <section class="card">
+    <label for="desc">What are you building?</label>
+    <textarea id="desc" rows="2" placeholder="e.g. a specialty coffee shop in Lucknow"></textarea>
+    <div class="row">
+      <input id="tlds" style="max-width:260px" value="com,ai,in,net,org,app" aria-label="TLDs">
+      <label><input id="ai" type="checkbox" checked style="width:auto"> LLM names &amp; explanations (if configured)</label>
+      <label><input id="taken" type="checkbox" style="width:auto"> show taken</label>
+      <button id="go">Find names</button>
+    </div>
+    <div id="meta" class="meta"></div>
+  </section>
+  <section class="card" id="results" hidden></section>
+
+  <section class="card">
+    <strong>Lookalike check</strong>
+    <p class="small">Is this domain imitating a known brand? Backed by an HNSW nearest-neighbour search over brand names.</p>
+    <div class="row"><input id="ld" placeholder="paypa1-secure-login.com" style="flex:1"><button id="lb">Analyse</button></div>
+    <div id="lr" style="margin-top:12px"></div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+$('go').onclick = async () => {
+  const description = $('desc').value.trim();
+  if (!description) return;
+  $('go').disabled = true; $('meta').textContent = 'Searching…';
+  try {
+    const res = await fetch('/api/v1/suggest', { method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ description, count:12, ai:$('ai').checked, includeTaken:$('taken').checked,
+        tlds: $('tlds').value.split(',').map(s=>s.trim()).filter(Boolean) }) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    $('results').hidden = false;
+    $('results').innerHTML = d.suggestions.length ? d.suggestions.map(s => `
+      <div class="item">
+        <div><span class="dom">${esc(s.domain)}</span>
+          <span class="tag ${s.status}">${s.status.toLowerCase()}</span>
+          <span class="tag ${s.risk}">risk: ${s.risk.toLowerCase()}</span></div>
+        <div class="score">${Math.round(s.score)}<div class="bar"><i style="width:${s.score}%"></i></div></div>
+        ${s.why ? `<div class="why">✨ ${esc(s.why)}</div>` : ''}
+      </div>`).join('') : '<p class="small">No available names found. Try other TLDs or "show taken".</p>';
+    const st = d.stats;
+    $('meta').textContent = `${st.generated} candidates · ${st.availabilityChecked} availability checks · ${st.tookMs} ms · generators: ${st.generators.join(' + ')}${st.semanticSearch ? ' · neural semantic search (' + st.semanticWords.slice(0,6).join(', ') + '…)' : ''}${st.aiExplanations ? ' · LLM explanations on' : ''}`;
+  } catch (e) { $('meta').textContent = 'Error: ' + e.message; }
+  $('go').disabled = false;
+};
+
+$('lb').onclick = async () => {
+  const domain = $('ld').value.trim(); if (!domain) return;
+  const res = await fetch('/api/v1/lookalike', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ domain }) });
+  if (!res.ok) { $('lr').textContent = 'Error: HTTP ' + res.status; return; }
+  const { report: r, aiExplanation } = await res.json();
+  $('lr').innerHTML = `<div><strong>${esc(r.domain)}</strong> <span class="tag ${r.level}">${r.level}</span> <span class="small">risk ${r.risk}</span></div>`
+    + (r.matches.length ? '<ul>' + r.matches.map(m => `<li>resembles <b>${esc(m.brand)}</b>: ${esc(m.reason)}</li>`).join('') + '</ul>' : '')
+    + (r.flags.length ? '<ul>' + r.flags.map(f => `<li>${esc(f)}</li>`).join('') + '</ul>' : '')
+    + (aiExplanation ? `<p class="small">✨ ${esc(aiExplanation)}</p>` : '');
+};
+</script>
+</body>
+</html>

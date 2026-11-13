@@ -1,0 +1,71 @@
+coffee: brew, bean, roast, cafe, mocha, cup, espresso, latte, grind
+tea: leaf, steep, chai, brew, sip, kettle, herbal
+food: bite, taste, plate, fork, feast, kitchen, savor, meal
+restaurant: table, dine, plate, kitchen, bistro, feast, menu
+bakery: bake, crumb, dough, loaf, oven, rise, flour, sweet
+fitness: fit, flex, rep, gym, pulse, stride, lift, strong
+yoga: flow, asana, zen, breathe, balance, stretch, calm
+health: vital, well, care, heal, pulse, thrive, remedy
+medical: care, clinic, heal, med, remedy, vital, cure
+travel: roam, trek, voyage, wander, journey, trip, atlas, compass
+photography: lens, focus, frame, shutter, snap, pixel, aperture
+music: tune, beat, note, chord, rhythm, melody, groove, tempo
+art: canvas, hue, brush, palette, craft, studio, muse
+fashion: thread, style, loom, tailor, wear, chic, attire
+clothing: thread, wear, tailor, loom, stitch, garb, attire
+jewelry: gem, gold, sparkle, charm, jewel, bead, glint
+books: page, read, story, chapter, novel, ink, shelf
+education: learn, scholar, study, lesson, tutor, mentor, campus
+tutoring: tutor, learn, mentor, lesson, scholar, guide
+tech: byte, bit, code, logic, stack, node, pixel, circuit
+software: code, stack, logic, build, byte, compile, forge
+ai: neural, mind, sage, logic, brain, cortex, synth
+startup: launch, spark, seed, rise, boost, venture, forge
+finance: ledger, coin, vault, fund, wealth, mint, capital
+accounting: ledger, tally, books, ratio, audit, balance
+insurance: shield, cover, guard, secure, safe, assure
+realestate: home, nest, estate, roof, haven, abode, key
+property: home, nest, estate, roof, haven, abode
+home: nest, haven, abode, hearth, roof, dwell
+garden: bloom, leaf, sprout, petal, grow, seed, green
+plants: bloom, leaf, sprout, petal, grow, seed, green
+pets: paw, fur, tail, whisker, bark, snout, buddy
+dog: paw, fetch, bark, woof, kennel, pup
+cat: paw, whisker, purr, meow, kitten, feline
+kids: tiny, joy, play, little, bloom, cub, giggle
+toys: play, fun, block, joy, brick, wonder
+gaming: pixel, quest, level, play, arcade, joystick, respawn
+sports: sprint, score, arena, team, goal, athlete
+cricket: bat, wicket, stump, pitch, over, crease
+cars: drive, motor, wheel, auto, gear, torque, cruise
+bikes: pedal, ride, spoke, cycle, cruise, trail
+cleaning: sparkle, fresh, shine, tidy, spotless, polish
+laundry: fresh, fold, wash, spin, press, lather
+beauty: glow, bloom, radiant, luxe, silk, polish
+salon: glow, shear, style, locks, polish, luxe
+skincare: glow, dew, silk, pure, radiant, serum
+wedding: vow, bloom, bride, union, ring, bliss, forever
+events: gather, fete, bash, occasion, host, soiree
+marketing: reach, buzz, signal, spark, amplify, brand
+design: pixel, sketch, form, studio, craft, canvas
+agency: studio, collective, guild, labs, works
+consulting: advise, compass, sage, guide, insight, pilot
+legal: counsel, verdict, brief, lex, justice, law
+photography studio: lens, focus, frame, shutter, snap
+delivery: swift, dash, courier, parcel, rush, drop
+logistics: freight, route, haul, cargo, move, ship
+shop: cart, market, store, bazaar, basket, boutique
+store: cart, market, shop, bazaar, basket, boutique
+ecommerce: cart, market, bazaar, basket, checkout
+farm: harvest, field, grain, orchard, sow, barn
+organic: pure, root, harvest, green, earth, natural
+energy: volt, spark, watt, solar, ray, current
+solar: ray, sun, photon, bright, shine, volt
+travelblog: wander, roam, trail, atlas, journey
+blog: ink, write, scribe, post, quill, journal
+podcast: wave, echo, listen, voice, cast, signal
+video: reel, frame, motion, clip, scene, cine
+crypto: coin, chain, block, token, vault, ledger
+security: shield, guard, lock, vault, sentinel, fort
+cloud: nimbus, sky, stratus, drift, vapor, host
+data: byte, node, lake, stream, matrix, index

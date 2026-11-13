@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+domainforge:
+  availability:
+    mode: ${DOMAINFORGE_AVAILABILITY:rdap}   # rdap | mock
+  embedding:
+    mode: ${DOMAINFORGE_EMBEDDING:auto}      # auto = local MiniLM model (downloaded once) | off
+  llm:
+    # Optional generative AI. Works with any OpenAI-compatible endpoint:
+    #   Ollama (local, free, no key):  model=qwen2.5:3b   base-url=http://localhost:11434/v1
+    #   Groq (free tier):              model=<id>         base-url=https://api.groq.com/openai/v1  api-key=...
+    model: ${DOMAINFORGE_LLM_MODEL:}         # empty = LLM features off
+    base-url: ${DOMAINFORGE_LLM_URL:http://localhost:11434/v1}
+    api-key: ${DOMAINFORGE_LLM_KEY:}
+
+spring:
+  application:
+    name: domain-forge
