@@ -1,0 +1,35 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # DomainForge depends on the Vex vector database (com.vex:vex-core); build it from source.
+      - uses: actions/checkout@v4
+        with:
+          repository: AshuGuptaz/Vex
+          path: vex-src
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Install vex-core
+        run: mvn -B -q -f vex-src/pom.xml -pl core -am install -DskipTests
+
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/domain-forge
+          key: minilm-all-MiniLM-L6-v2
+
+      - name: Test
+        run: mvn -B test

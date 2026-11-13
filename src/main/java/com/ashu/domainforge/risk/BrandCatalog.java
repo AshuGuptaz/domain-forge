@@ -25,6 +25,7 @@ public class BrandCatalog {
   private final VexIndex index;
   private final Set<String> officialDomains = new HashSet<>();
   private final Map<String, List<String>> domainsBySkeleton = new HashMap<>();
+  private final Set<String> protectedSkeletons = new HashSet<>();
 
   public BrandCatalog(@Qualifier("brandIndex") VexIndex index) {
     this.index = index;
@@ -45,13 +46,28 @@ public class BrandCatalog {
     log.info("Indexed {} brand skeletons into Vex HNSW", index.size());
   }
 
+  /** Registers a protected (high-prominence) brand: full lookalike rules apply. */
   public void register(String officialDomain) {
+    register(officialDomain, true);
+  }
+
+  /**
+   * @param protectedTier true for prominent brands (typo / keyword / containment rules apply);
+   *     false for the long tail, where only exact-skeleton (homoglyph) matches are flagged, since
+   *     two unrelated popular sites one letter apart are not an attack.
+   */
+  public void register(String officialDomain, boolean protectedTier) {
     officialDomains.add(officialDomain);
     String label = officialDomain.substring(0, officialDomain.indexOf('.'));
     String skeleton = label.replace("-", "");
     List<String> list = domainsBySkeleton.computeIfAbsent(skeleton, k -> new ArrayList<>());
     if (list.isEmpty()) index.add(skeleton);
     list.add(officialDomain);
+    if (protectedTier) protectedSkeletons.add(skeleton);
+  }
+
+  public boolean isProtected(String skeleton) {
+    return protectedSkeletons.contains(skeleton);
   }
 
   public boolean isOfficial(String domain) {

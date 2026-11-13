@@ -31,6 +31,11 @@ public class LookalikeDetector {
 
   private static final int K = 6;
 
+  /** TLDs disproportionately used for abuse; a brand name on these is more suspicious. */
+  private static final Set<String> SUSPICIOUS_TLDS = Set.of(
+      "xyz", "biz", "info", "online", "top", "click", "site", "club", "work", "support", "buzz",
+      "icu", "cfd", "shop", "live", "link", "rest", "zip", "mov", "tk", "ml", "ga", "cf", "gq");
+
   private final VexIndex index;
   private final BrandCatalog catalog;
 
@@ -67,65 +72,97 @@ public class LookalikeDetector {
     else if (Confusables.hasNonAscii(label)) flags.add("non-ASCII characters in label");
     if (label.chars().filter(c -> c == '-').count() >= 2) flags.add("multiple hyphens");
 
-    Set<String> forms = new LinkedHashSet<>();
-    for (String sk : Confusables.skeletons(label)) {
-      forms.add(sk);
-      forms.add(stripPhishWords(sk));
+    // Three kinds of normalised forms, because the right rule differs for each:
+    //  FULL     whole label, homoglyphs folded       -> exact / typo / containment rules
+    //  STRIPPED whole label minus phishing keywords  -> exact match only (no edit distance)
+    //  SEGMENT  one hyphen-separated part            -> exact match only
+    Set<String> full = new LinkedHashSet<>(Confusables.skeletons(label));
+    Set<String> stripped = new LinkedHashSet<>();
+    for (String sk : full) {
+      String st = stripPhishWords(sk);
+      if (!st.equals(sk)) stripped.add(st);
     }
-    for (String seg : label.split("-")) {
-      if (seg.length() >= 4 && !seg.equals(label)) {
-        for (String sk : Confusables.skeletons(seg)) forms.add(stripPhishWords(sk));
+    Set<String> segments = new LinkedHashSet<>();
+    if (label.contains("-")) {
+      for (String seg : label.split("-")) {
+        if (seg.length() >= 4) {
+          for (String sk : Confusables.skeletons(seg)) segments.add(stripPhishWords(sk));
+        }
       }
     }
-    forms.removeIf(f -> f.length() < 3);
+    Set<String> query = new LinkedHashSet<>();
+    query.addAll(full);
+    query.addAll(stripped);
+    query.addAll(segments);
+    query.removeIf(f -> f.length() < 3);
 
     Map<String, Double> sims = new HashMap<>();
-    for (String f : forms) {
+    for (String f : query) {
       for (Neighbor n : index.nearest(f, K)) sims.merge(n.label(), n.similarity(), Math::max);
     }
 
     String plain = label.replace("-", "");
-    boolean usedKeyword = false;
+    String lastTld = tld.contains(".") ? tld.substring(tld.lastIndexOf('.') + 1) : tld;
     Map<String, LookalikeReport.Match> best = new HashMap<>();
     for (Map.Entry<String, Double> e : sims.entrySet()) {
       String brand = e.getKey();
-      for (String f : forms) {
-        Double score = null;
-        String reason = null;
-        boolean keywordHit = false;
-        for (String sk : Confusables.skeletons(label)) {
-          if (stripPhishWords(sk).equals(brand) && !sk.equals(brand)) keywordHit = true;
-        }
+      boolean prominent = catalog.isProtected(brand);
+      Double score = null;
+      String reason = null;
+      for (String f : full) {
+        Double s2 = null;
+        String r2 = null;
         if (f.equals(brand)) {
-          if (keywordHit) {
-            score = 0.85;
-            reason = "brand name combined with a phishing keyword";
+          if (plain.equals(brand) && label.equals(brand)) {
+            if (prominent && SUSPICIOUS_TLDS.contains(lastTld)) {
+              s2 = 0.55;
+              r2 = "brand name on a suspicious TLD (." + lastTld + ")";
+            } else if (prominent) {
+              s2 = 0.3;
+              r2 = "brand name on a different TLD (" + domain + ")";
+            }
           } else if (plain.equals(brand)) {
-            score = 0.55;
-            reason = "brand name registered on a different domain (" + domain + ")";
+            if (prominent) {
+              s2 = 0.5;
+              r2 = "hyphenated copy of the brand name";
+            }
           } else {
-            score = 0.95;
-            reason = "visual lookalike of the brand (homoglyph / obfuscation)";
+            s2 = 0.95;
+            r2 = "visual lookalike of the brand (homoglyph / obfuscation)";
           }
-        } else if (brand.length() >= 5) {
+        } else if (prominent && brand.length() >= 5) {
           int d = Confusables.distance(f, brand);
           if (d == 1) {
-            score = 0.85;
-            reason = "one-character typo of the brand";
+            s2 = 0.85;
+            r2 = "one-character typo of the brand";
           } else if (d == 2 && brand.length() >= 8) {
-            score = 0.6;
-            reason = "two-character typo of a long brand";
-          } else if (f.contains(brand) && f.length() > brand.length() && brand.length() >= 6) {
-            score = 0.6;
-            reason = "contains the brand name";
+            s2 = 0.6;
+            r2 = "two-character typo of a long brand";
+          } else if (f.contains(brand) && f.length() > brand.length() && brand.length() >= 8) {
+            s2 = 0.5;
+            r2 = "contains the brand name";
           }
         }
-        if (score != null) {
-          LookalikeReport.Match cur = best.get(brand);
-          if (cur == null || score > cur.score()) {
-            best.put(brand, new LookalikeReport.Match(catalog.officialDomainsFor(brand).get(0), reason, score, round(e.getValue())));
+        if (s2 != null && (score == null || s2 > score)) { score = s2; reason = r2; }
+      }
+      if (prominent) {
+        for (String st : stripped) {
+          if (st.equals(brand) && (score == null || 0.85 > score)) {
+            score = 0.85;
+            reason = "brand name combined with a phishing keyword";
           }
         }
+        if (brand.length() >= 5) {
+          for (String sg : segments) {
+            if (sg.equals(brand) && (score == null || 0.5 > score)) {
+              score = 0.5;
+              reason = "brand name as one part of a hyphenated domain";
+            }
+          }
+        }
+      }
+      if (score != null) {
+        best.put(brand, new LookalikeReport.Match(catalog.officialDomainsFor(brand).get(0), reason, score, round(e.getValue())));
       }
     }
 

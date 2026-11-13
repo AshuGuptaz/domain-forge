@@ -1,0 +1,14 @@
+# Render blueprint: https://render.com/docs/blueprint-spec
+# The ONNX model + JVM need roughly 1 GB RAM; on a 512 MB free instance set DOMAINFORGE_EMBEDDING=off
+# (everything except neural semantic search keeps working).
+services:
+  - type: web
+    name: domain-forge
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DOMAINFORGE_AVAILABILITY
+        value: rdap
+      - key: DOMAINFORGE_EMBEDDING
+        value: auto

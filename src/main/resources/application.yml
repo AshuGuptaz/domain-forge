@@ -6,6 +6,7 @@ domainforge:
     mode: ${DOMAINFORGE_AVAILABILITY:rdap}   # rdap | mock
   embedding:
     mode: ${DOMAINFORGE_EMBEDDING:auto}      # auto = local MiniLM model (downloaded once) | off
+    dir: ${DOMAINFORGE_MODEL_DIR:~/.cache/domain-forge/minilm}
   llm:
     # Optional generative AI. Works with any OpenAI-compatible endpoint:
     #   Ollama (local, free, no key):  model=qwen2.5:3b   base-url=http://localhost:11434/v1
